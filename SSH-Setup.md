@@ -1,4 +1,14 @@
-# Install the SSH client and server in Linux OS
+
+# Operating Systems Course Repository
+
+📌 Overview
+- This repository contains  coursework, experiments, notes, and projects related to the Operating Systems (OS) course.
+- The goal of this repository is to document the  learning process and provide practical implementations of core OS concepts.
+- Topics covered include process management, memory management, file systems, system calls, and various OS tools.
+
+
+## Practicle-1
+### Install the SSH client and server in Linux OS
 
 ## Ubuntu OS
 Download ISO File: https://ubuntu.com/download
