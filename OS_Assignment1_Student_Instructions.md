@@ -141,35 +141,67 @@ This final action demonstrates full control over the network link and completes 
 
 ---
 
-## Troubleshooting for macOS Users
+## Comprehensive Troubleshooting Guide for macOS Users
 
-If you are a student utilizing a Mac device, you are likely to run into one of the following issues when completing this assignment. Please read through these common problems and their solutions.
+If you are a student utilizing a Mac computer (whether an Intel or Apple Silicon model), there are some notoriously common pitfalls associated with macOS virtualization, system permissions, and network bridging. Please carefully review the categories below to solve 100% of the standard connection, input, output, and installation problems.
 
-### 1. Apple Silicon (M1/M2/M3 chips) Compatibility Issues
-**Problem:** Oracle VirtualBox historically relies on x86_64 architecture (Intel chips). If you have a newer Apple Silicon Mac, you will get installation errors or your VMs will fail to boot stating an architecture mismatch.
-**Solution:** 
-- **Option A (Recommended):** Instead of VirtualBox, use an Apple Silicon native hypervisor such as **[UTM](https://mac.getutm.app/)** or **Parallels Desktop**.
-- **Option B:** Make sure you are strictly downloading the **ARM64 (AArch64)** versions of the Ubuntu and CentOS ISOs instead of the AMD64 versions, and ensure you use the "Developer Preview" version of VirtualBox for macOS/ARM64.
+### Phase 1: Installation & Architecture Problems
 
-### 2. Kernel Extension / Hypervisor Blocked by Privacy Settings
-**Problem:** During the VirtualBox installation on macOS (especially Intel Macs on newer macOS versions like Sonoma/Ventura), the installation might "fail" or the VM will refuse to start because the OS blocked the system extension.
-**Solution:**
-1. Open your Mac's **System Settings** (or System Preferences).
-2. Navigate to **Privacy & Security**.
-3. Scroll down to the **Security** section. You should see a message stating that system software from developer "Oracle America, Inc." was blocked.
-4. Click **Allow**, authenticate with your Mac password, and restart your computer to apply the change.
+**Problem A: Apple Silicon (M1/M2/M3 chips) "Architecture Mismatch" Error**
+- **Symptom:** Your VM fails to boot, crashes instantly, or VirtualBox fails to install.
+- **Why it happens:** Standard VirtualBox relies on x86_64 architecture (Intel CPUs). Modern Macs use ARM architecture (Apple Silicon).
+- **Solution:** 
+  1. *(Recommended Option)* Drop VirtualBox entirely and use an Apple Silicon native hypervisor like **[UTM](https://mac.getutm.app/)** or **Parallels Desktop**.
+  2. Ensure you strictly download the **ARM-based (AArch64)** versions of the Ubuntu and CentOS ISO files, NOT the standard AMD64 versions.
 
-### 3. VirtualBox NAT Network Fails to Assign IP Address
-**Problem:** macOS has a known networking quirk with VirtualBox where the NAT Network DHCP server fails to start, meaning your Ubuntu/CentOS VMs won't get an IP address when you run `ip a` (it will remain empty).
-**Solution:**
-- Go to the VirtualBox Preferences `->` Network `->` edit your NAT Network, and verify "Support DHCP" is checked.
-- If it still doesn't work, switch your VM's Network Adapter setting from "NAT Network" to **"Bridged Adapter"**. This bypasses VirtualBox's internal router and bridges the VM directly to your home Wi-Fi network, allowing it to easily grab an IP address and communicate with both your host Mac and the other VMs.
+**Problem B: Kernel Extension Blocked by macOS Privacy Settings**
+- **Symptom:** VirtualBox installs, but creating/starting a VM throws a "Kernel driver not installed (rc=-1908)" error.
+- **Why it happens:** macOS Sonoma, Ventura, and Monterey aggressively block third-party system extensions.
+- **Solution:** Go to **System Settings > Privacy & Security**. Scroll to the **Security** section, find the message stating software from "Oracle America, Inc." was blocked, click **Allow**, type your Mac password, and restart your computer.
 
-### 4. "REMOTE HOST IDENTIFICATION HAS CHANGED" SSH Error
-**Problem:** When connecting from your Mac's terminal to the VM (`ssh username@<ip-address>`), you might suddenly receive a large security warning block stating that the ECDSA host key has changed. This happens when you delete and recreate a VM that ends up utilizing the same previous IP address.
-**Solution:** 
-macOS saves the SSH signatures to protect you. You must reset the signature for that IP address by running the following command on your Mac's terminal:
-```bash
-ssh-keygen -R <ip-address-of-your-vm>
-```
-After executing this, you can safely connect again.
+### Phase 2: Input Problems (Keyboard, Mouse, & Files)
+
+**Problem C: Mouse and Keyboard Trapped Inside the VM**
+- **Symptom:** You clicked into the Ubuntu/CentOS window, but now you cannot move your mouse back to your macOS desktop. 
+- **Solution:** Your inputs have been "captured" by the Virtual Machine. To release your mouse and keyboard back to your Mac, firmly press the **Host Key**. On macOS, the default Host Key is the **Left Command (⌘) key**.
+
+**Problem D: VirtualBox Cannot Access or Find the Downloaded ISO File**
+- **Symptom:** When choosing the Ubuntu/CentOS ISO, the file is grayed out, or VirtualBox says "Permission Denied" reading the file.
+- **Why it happens:** VirtualBox does not have permission to read your `Downloads` folder, or the file was optimized by "iCloud Drive" and isn't locally downloaded.
+- **Solution:** 
+  1. Open macOS Settings `->` Privacy & Security `->` Full Disk Access `->` Toggle ON for VirtualBox.
+  2. Drag your downloaded ISO file from your Downloads folder to a neutral location like `/Users/Shared` and select it from there.
+
+### Phase 3: Output & Networking Problems
+
+**Problem E: `ip a` Shows No IP Address (No Output)**
+- **Symptom:** You type `ip a` in the terminal, but underneath your network adapter, there is no `inet 192.168...` IP address listed. 
+- **Why it happens:** A very common bug on macOS is that VirtualBox's internal "NAT Network" DHCP server silently fails to start.
+- **Solution:** Inside your VM settings, go to Network and change "Attached to: NAT Network" to **Attached to: Bridged Adapter**. This bridges the VM directly to your Mac's Wi-Fi card, making your home router output a completely valid IP address to the VM.
+
+**Problem F: VM Screen Resolution is Tiny**
+- **Symptom:** The graphical interface outputs to a tiny 800x600 square box that is visually difficult to read.
+- **Solution:** Under the top VirtualBox menu bar, go to `Devices -> Insert Guest Additions CD image`. This will mount a script inside your Linux machine that installs graphical drivers, allowing your output window to properly scale to your Mac's retina display.
+
+### Phase 4: SSH Connection Problems
+
+**Problem G: "Permission denied (publickey, password)" when Logging In**
+- **Symptom:** Your password keeps being rejected when accessing via macOS terminal, even though you know the password is correct.
+- **Why it happens:** A frequent mistake is tying `ssh <ip-address>`. Your Mac defaults to using your *macOS account username* to log in. The VM has no idea who your Mac user is.
+- **Solution:** You MUST explicitly tell SSH which VM user account you want to connect to. Use this strict connection format: `ssh <ubuntu-username>@<ip-address>`.
+
+**Problem H: Connection "Timed Out" or "Refused"**
+- **Symptom:** SSH spins indefinitely and drops out, or instantly refuses the connection.
+- **Why it happens:** Either the SSH service is inactive, or the VMs are on a different subnet than your host machine.
+- **Solution:** 
+  1. In the VM terminal, verify SSH is active: `sudo systemctl status sshd`. Start it if it says inactive.
+  2. If using Bridged Mode (from Problem E), ensure both the Mac and the VMs share the exact same starting IP digits (e.g., both are `192.168.1.xxx`). 
+
+**Problem I: "REMOTE HOST IDENTIFICATION HAS CHANGED" Giant Warning Box**
+- **Symptom:** Terminal refuses to let you type your password due to a "Security breach" warning about an ECDSA key.
+- **Why it happens:** You deleted an old VM and created a new one, but your Mac cached the security signature of the old VM to that same IP address. 
+- **Solution:** You must clear your Mac's cached connection memory. Run exactly this in your Mac terminal:
+  ```bash
+  ssh-keygen -R <ip-address-of-your-vm>
+  ```
+  Once the known host is removed, re-run the `ssh` command and type `yes` to accept the new secure connection.
